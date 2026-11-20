@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Bookworm">
+<title>Bookworm</title>
+<link id="apple-icon" rel="apple-touch-icon" href="">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+:root{--bg:#f8f4fc;--card:#ffffff;--txt:#322842;--mut:#837599;--pri:#b794f6;--sec:#f49ac1;--soft:#f2e8ff;--bdr:#ecdff9;--font:-apple-system,BlinkMacSystemFont,sans-serif}
+body.pal-pink{--bg:#fdf4f8;--pri:#f48fb1;--sec:#ce93d8;--soft:#fce4ec;--bdr:#f8bbd0}
+body.pal-mint{--bg:#f2fbf8;--pri:#6ec6a8;--sec:#95d5b2;--soft:#e0f5ee;--bdr:#c7eadf}
+body.pal-peach{--bg:#fff7f2;--pri:#f6a27e;--sec:#f8bbd0;--soft:#ffece2;--bdr:#ffd8c4}
+body.font-serif{--font:Georgia,'Times New Roman',serif}
+body.font-mono{--font:'Courier New',monospace}
+body.sepia{--bg:#f5eedc;--card:#fbf7ec;--txt:#433628;--mut:#8a7965;--soft:#efe4ce;--bdr:#e5d7bd}
+body.dark{--bg:#171421;--card:#221e30;--txt:#f4effa;--mut:#a59ab8;--soft:#2e2842;--bdr:#362f4d}
+*{box-sizing:border-box;user-select:none;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:var(--font);background:var(--bg);color:var(--txt);transition:background .25s,color .25s}
+#app{width:100%;height:100%;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+.tab-view{flex:1;overflow-y:auto;padding:16px 16px 24px;display:none}
+.tab-view.active{display:block}
+nav{height:62px;background:var(--card);border-top:1px solid var(--bdr);display:flex;justify-content:space-around;align-items:center;padding:0 6px}
+.nbtn{border:0;background:none;color:var(--mut);display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;font-weight:700;padding:6px 8px;border-radius:12px}
+.nbtn span:first-child{font-size:19px}
+.nbtn.active{color:var(--pri);background:var(--soft)}
+.card{background:var(--card);border:1px solid var(--bdr);border-radius:22px;padding:16px;margin-bottom:14px;box-shadow:0 8px 24px rgba(130,100,170,.08)}
+.hero{background:linear-gradient(135deg,var(--pri),var(--sec));color:#fff;border:0}
+.btn{width:100%;padding:13px;border:0;border-radius:14px;background:linear-gradient(135deg,var(--pri),var(--sec));color:#fff;font-family:inherit;font-size:14px;font-weight:700}
+.btn-s{padding:8px 12px;border:1px solid var(--bdr);border-radius:12px;background:var(--soft);color:var(--txt);font-family:inherit;font-size:12px;font-weight:700}
+input,textarea,select{width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--bdr);background:var(--bg);color:var(--txt);font-family:inherit;font-size:14px;user-select:text}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px}
+.chip{padding:6px 12px;border-radius:14px;border:1px solid var(--bdr);background:var(--card);color:var(--txt);font-size:12px;font-weight:700;white-space:nowrap}
+.chip.on{background:var(--pri);color:#fff;border-color:transparent}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.bcard{background:var(--card);border:1px solid var(--bdr);border-radius:18px;padding:10px;display:flex;flex-direction:column;gap:6px;position:relative}
+.cover{width:100%;aspect-ratio:2/3;border-radius:12px;background:var(--soft);object-fit:cover;display:flex;align-items:center;justify-content:center;font-size:34px;overflow:hidden}
+.cover img{width:100%;height:100%;object-fit:cover}
+.prog{width:100%;height:5px;background:var(--soft);border-radius:4px;overflow:hidden}
+.prog div{height:100%;background:linear-gradient(90deg,var(--pri),var(--sec))}
+.badge-tag{display:inline-block;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;background:var(--soft);color:var(--txt)}
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
+.stat{background:var(--card);border:1px solid var(--bdr);border-radius:18px;padding:14px;text-align:center}
+.stat b{font-size:22px;color:var(--pri);display:block}
+.ach{display:flex;align-items:center;gap:12px;padding:10px;border-radius:14px;background:var(--soft);margin-bottom:8px;opacity:.45}
+.ach.unlocked{opacity:1;border:1px solid var(--pri)}
+/* Reader overlay */
+#reader{position:fixed;inset:0;background:var(--bg);z-index:30;display:none;flex-direction:column;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+#reader header{height:50px;padding:0 12px;display:flex;align-items:center;justify-content:space-between;gap:6px}
+.ico{width:33px;height:33px;border:1px solid var(--bdr);border-radius:10px;background:var(--card);color:var(--txt);font-size:14px;display:flex;align-items:center;justify-content:center}
+.ico.on{background:var(--pri);color:#fff;border-color:transparent}
+#r-tools{display:none;padding:8px 14px;background:var(--card);border-bottom:1px solid var(--bdr);gap:8px;align-items:center;flex-wrap:wrap;font-size:12px}
+#wrap{flex:1;width:100%;overflow:auto;display:flex;align-items:center;justify-content:center;padding:10px;perspective:1400px}
+#sheet{background:#fff;box-shadow:0 12px 30px rgba(50,30,80,.2);border-radius:4px 12px 12px 4px;transition:transform .28s,opacity .2s;transform-origin:left center;position:relative}
+.rib{position:absolute;top:0;right:14px;width:20px;height:30px;background:linear-gradient(180deg,var(--sec),var(--pri));clip-path:polygon(0 0,100% 0,100% 100%,50% 78%,0 100%);display:none}
+.flip-n{transform:rotateY(-18deg) scale(.97);opacity:.65}
+.flip-p{transform:rotateY(16deg) scale(.97);opacity:.65}
+#reader footer{height:52px;padding:0 14px;display:flex;align-items:center;justify-content:space-between}
+.modal{position:fixed;inset:0;background:rgba(20,16,30,.55);display:none;align-items:center;justify-content:center;padding:18px;z-index:50}
+.mbox{background:var(--card);border:1px solid var(--bdr);border-radius:24px;padding:20px;max-width:370px;width:100%;max-height:82vh;overflow-y:auto}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- INICIO -->
+  <section id="t-home" class="tab-view active">
+    <div class="card hero">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:12px;opacity:.9" id="greet">¡Bienvenida de vuelta!</div>
+          <h2 style="margin:2px 0 0;font-size:20px">Bookworm</h2>
+        </div>
+        <div id="pet-badge" style="font-size:38px;background:rgba(255,255,255,.22);width:56px;height:56px;border-radius:18px;display:flex;align-items:center;justify-content:center">🐛</div>
+      </div>
+    </div>
+
+    <div class="card" id="now-reading-card">
+      <div style="font-size:12px;font-weight:700;color:var(--pri);margin-bottom:8px">📖 ¿QUÉ ESTOY LEYENDO?</div>
+      <div id="now-reading-body"></div>
+    </div>
+
+    <div class="card">
+      <div style="font-size:12px;font-weight:700;color:var(--sec);margin-bottom:6px">✨ CITA DEL DÍA</div>
+      <div id="daily-quote" style="font-size:13px;font-style:italic;line-height:1.45"></div>
+    </div>
+
+    <button class="btn" onclick="fi.click()">➕ Importar nuevo libro PDF</button>
+    <input type="file" id="fi" accept="application/pdf" hidden>
+  </section>
+
+  <!-- BIBLIOTECA -->
+  <section id="t-lib" class="tab-view">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <h2 style="margin:0;font-size:20px">📚 Mi Biblioteca</h2>
+      <button class="btn-s" onclick="fi.click()">+ Agregar</button>
+    </div>
+    <input id="search-lib" placeholder="🔍 Buscar por título o autor..." oninput="renderLib()" style="margin-bottom:10px">
+    <div class="chips" id="col-chips"></div>
+    <div class="grid" id="lib-grid"></div>
+  </section>
+
+  <!-- DIARIO -->
+  <section id="t-diary" class="tab-view">
+    <h2 style="margin:0 0 12px;font-size:20px">✍️ Mi Diario Literario</h2>
+    <div class="card">
+      <div style="font-size:13px;font-weight:700;margin-bottom:8px">📝 Reflexiones, reseñas y personajes</div>
+      <select id="diary-book-sel" onchange="loadDiaryForm()" style="margin-bottom:8px"></select>
+      <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center;font-size:13px">
+        <span>Calificación:</span>
+        <select id="d-stars" style="width:auto"><option value="5">⭐⭐⭐⭐⭐ (5)</option><option value="4">⭐⭐⭐⭐ (4)</option><option value="3">⭐⭐⭐ (3)</option><option value="2">⭐⭐ (2)</option><option value="1">⭐ (1)</option></select>
+      </div>
+      <input id="d-chars" placeholder="💕 Personajes favoritos..." style="margin-bottom:8px">
+      <textarea id="d-review" rows="3" placeholder="💭 Mis pensamientos o reseña del libro..."></textarea>
+      <button class="btn" onclick="saveDiaryEntry()" style="margin-top:8px">Guardar en mi diario</button>
+    </div>
+    <h3 style="font-size:15px;margin:14px 0 8px">💜 Todas mis citas guardadas</h3>
+    <div id="all-quotes-list"></div>
+  </section>
+
+  <!-- PROGRESO -->
+  <section id="t-stats" class="tab-view">
+    <h2 style="margin:0 0 12px;font-size:20px">📊 Mi Progreso</h2>
+    <div class="stat-grid" id="stats-boxes"></div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <b style="font-size:14px">🎯 Meta mensual de libros</b>
+        <button class="btn-s" onclick="setGoal()">Editar</button>
+      </div>
+      <div id="goal-txt" style="font-size:13px;color:var(--mut);margin-bottom:6px"></div>
+      <div class="prog"><div id="goal-bar"></div></div>
+    </div>
+    <h3 style="font-size:15px;margin:14px 0 8px">🎀 Logros desbloqueables</h3>
+    <div id="ach-list"></div>
+  </section>
+
+  <!-- AJUSTES -->
+  <section id="t-set" class="tab-view">
+    <h2 style="margin:0 0 12px;font-size:20px">⚙️ Personalización</h2>
+    <div class="card">
+      <b style="font-size:14px">🐾 Elige tu mascota lectora</b>
+      <div class="chips" style="margin-top:8px" id="pet-opts"></div>
+      <b style="font-size:14px;display:block;margin-top:12px">🎨 Color pastel principal</b>
+      <div class="chips" style="margin-top:8px" id="pal-opts"></div>
+      <b style="font-size:14px;display:block;margin-top:12px">🔤 Tipografía</b>
+      <div class="chips" style="margin-top:8px" id="font-opts"></div>
+    </div>
+    <div class="card" style="font-size:13px;color:var(--mut)">
+      <b>💡 Consejo para tu pantalla de inicio:</b> Si cambias el color pastel aquí, la app cambia al instante. Todos tus libros, citas y tiempos quedan guardados 100 % sin internet en tu iPhone.
+    </div>
+  </section>
+
+  <nav>
+    <button class="nbtn active" onclick="goTab('home',this)"><span>🏠</span><span>Inicio</span></button>
+    <button class="nbtn" onclick="goTab('lib',this)"><span>📚</span><span>Biblioteca</span></button>
+    <button class="nbtn" onclick="goTab('diary',this)"><span>✍️</span><span>Mi diario</span></button>
+    <button class="nbtn" onclick="goTab('stats',this)"><span>📊</span><span>Progreso</span></button>
+    <button class="nbtn" onclick="goTab('set',this)"><span>⚙️</span><span>Ajustes</span></button>
+  </nav>
+</div>
+
+<!-- LECTOR -->
+<div id="reader">
+  <header>
+    <button class="ico" onclick="closeReader()">←</button>
+    <div id="r-title" style="font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">Libro</div>
+    <div style="display:flex;gap:5px">
+      <button class="ico" id="r-bm" onclick="toggleBm()">🔖</button>
+      <button class="ico" onclick="openRQuote()">✍️</button>
+      <button class="ico" onclick="toggleRTools()">Aa</button>
+      <button class="ico" id="r-th" onclick="cycleTheme()">☀️</button>
+    </div>
+  </header>
+  <div id="r-tools">
+    <span>☀️ Brillo:</span><input type="range" min="45" max="110" value="100" oninput="sheet.style.filter=`brightness(${this.value}%)`" style="width:90px">
+    <button class="btn-s" onclick="chgZoom(-.2)">🔍-</button>
+    <button class="btn-s" onclick="chgZoom(.2)">🔍+</button>
+    <button class="btn-s" onclick="findInPdf()">🔎 Buscar</button>
+  </div>
+  <div class="prog" style="border-radius:0;height:3px"><div id="r-pfill"></div></div>
+  <div id="wrap"><div id="sheet"><div class="rib" id="r-rib"></div><canvas id="cv"></canvas></div></div>
+  <footer>
+    <button class="btn-s" onclick="goPage(-1)">‹ Ant</button>
+    <span id="r-ind" onclick="jumpPage()" style="font-size:13px;font-weight:700;background:var(--soft);padding:5px 12px;border-radius:10px">1 / 1</span>
+    <button class="btn-s" onclick="goPage(1)">Sig ›</button>
+  </footer>
+</div>
+
+<!-- MODAL FICHA LIBRO -->
+<div class="modal" id="m-book" onclick="if(event.target===this)this.style.display='none'">
+  <div class="mbox" id="m-book-body"></div>
+</div>
+
+<!-- MODAL CITA RAPIDA EN LECTOR -->
+<div class="modal" id="m-rq" onclick="if(event.target===this)this.style.display='none'">
+  <div class="mbox">
+    <h3 style="margin:0 0 10px;font-size:16px">✍️ Guardar cita (Pág. <span id="rq-pg">1</span>)</h3>
+    <textarea id="rq-txt" rows="3" placeholder="Escribe tu frase favorita..."></textarea>
+    <button class="btn" style="margin-top:10px" onclick="addReaderQuote()">Guardar cita</button>
+    <div id="rq-bms" style="margin-top:12px"></div>
+    <button class="btn-s" style="width:100%;margin-top:8px" onclick="document.getElementById('m-rq').style.display='none'">Cerrar</button>
+  </div>
+</div>
+
+<script>
+// Icono pastel Bookworm para iOS
+(()=>{const c=document.createElement('canvas');c.width=c.height=512;const x=c.getContext('2d');
+const g=x.createLinearGradient(0,0,512,512);g.addColorStop(0,'#d8b4fe');g.addColorStop(1,'#fbcfe8');
+x.fillStyle=g;x.fillRect(0,0,512,512);x.fillStyle='#fff';
+x.beginPath();x.roundRect(105,155,142,210,18);x.roundRect(265,155,142,210,18);x.fill();
+x.fillStyle='#f472b6';x.font='bold 78px sans-serif';x.textAlign='center';x.fillText('♥',256,128);
+document.getElementById('apple-icon').href=c.toDataURL('image/png');})();
+
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// Estado y persistencia
+const S={
+  get:(k,d)=>{try{return JSON.parse(localStorage.getItem('bw_'+k))??d}catch{return d}},
+  set:(k,v)=>localStorage.setItem('bw_'+k,JSON.stringify(v))
+};
+let books=S.get('books',[]),quotes=S.get('quotes',[]),prefs=S.get('prefs',{pet:'🐛',pal:'lilac',font:'sans',th:'light',goal:3});
+let stats=S.get('stats',{mins:0,pages:0,days:[]});
+let curCol='Todos',curBook=null,pdfDoc=null,curP=1,totP=0,zoom=1,busy=false,tx0=0,timer=null;
+
+// IndexedDB para PDFs
+const openDB=()=>new Promise((res,rej)=>{const r=indexedDB.open('BookwormLib',1);r.onupgradeneeded=()=>r.result.createObjectStore('pdfs');r.onsuccess=()=>res(r.result);r.onerror=()=>rej()});
+async function putPdf(id,buf){const d=await openDB();return new Promise(r=>{const t=d.transaction('pdfs','readwrite');t.objectStore('pdfs').put(buf,id);t.oncomplete=r})}
+async function getPdf(id){const d=await openDB();return new Promise(r=>{const t=d.transaction('pdfs','readonly');const q=t.objectStore('pdfs').get(id);q.onsuccess=()=>r(q.result);q.onerror=()=>r(null)})}
+async function delPdf(id){const d=await openDB();return new Promise(r=>{const t=d.transaction('pdfs','readwrite');t.objectStore('pdfs').delete(id);t.oncomplete=r})}
+
+// Migración automática si ya tenías un libro guardado de la versión anterior
+async function migrateOldBook(){
+  if(books.length)return;
+  try{
+    const r=indexedDB.open('BookDB',1);
+    r.onsuccess=()=>{const d=r.result;if(!d.objectStoreNames.contains('s'))return;
+      const q=d.transaction('s','readonly').objectStore('s').get('b');
+      q.onsuccess=async()=>{if(q.result&&q.result.b){await importBuffer(q.result.b,q.result.n,true)}}};
+  }catch{}
+}
+
+async function importBuffer(buf,fileName,silent=false){
+  const pdf=await pdfjsLib.getDocument({data:buf.slice(0)}).promise;
+  const p1=await pdf.getPage(1),vp=p1.getViewport({scale:.5});
+  const c=document.createElement('canvas');c.width=vp.width;c.height=vp.height;
+  await p1.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+  const cover=c.toDataURL('image/jpeg',.72);
+  const id='b_'+Date.now();
+  await putPdf(id,buf);
+  const oldP=+(localStorage.getItem('p_'+fileName)||1);
+  books.unshift({id,title:fileName.replace(/\.pdf$/i,''),author:'Autor por definir',cover,tot:pdf.numPages,cur:oldP,status:'Leyendo',fav:false,started:new Date().toLocaleDateString('es-CL'),finished:'',stars:5,chars:'',review:''});
+  S.set('books',books);
+  refreshAll();
+  if(!silent)openReader(id);
+}
+
+fi.onchange=async e=>{const f=e.target.files[0];if(!f)return;const b=await f.arrayBuffer();await importBuffer(b,f.name);fi.value=''};
+
+// Navegación
+function goTab(id,el){
+  document.querySelectorAll('.tab-view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('t-'+id).classList.add('active');
+  document.querySelectorAll('nav .nbtn').forEach(b=>b.classList.remove('active'));
+  if(el)el.classList.add('active');
+  refreshAll();
+}
+
+function refreshAll(){
+  applyPrefs();
+  renderHome();
+  renderLib();
+  renderDiary();
+  renderStats();
+}
+
+// INICIO
+const greetings=['¡Bienvenida de vuelta, pequeña ratoncita de biblioteca!','Tu próxima aventura literaria te espera ✨','Qué lindo verte por tu rincón de lectura 💕','Lista para sumergirnos en una buena historia 📖'];
+function renderHome(){
+  document.getElementById('greet').textContent=greetings[new Date().getHours()%greetings.length];
+  document.getElementById('pet-badge').textContent=prefs.pet;
+  const active=books.find(b=>b.status==='Leyendo')||books[0];
+  const nr=document.getElementById('now-reading-body');
+  if(!active){
+    nr.innerHTML='<p style="font-size:13px;color:var(--mut);margin:0">Aún no tienes libros en tu estantería. ¡Importa tu primer PDF abajo!</p>';
+  }else{
+    const pct=Math.round((active.cur/active.tot)*100);
+    nr.innerHTML=`<div style="display:flex;gap:12px;align-items:center">
+      <div class="cover" style="width:62px;flex-shrink:0">${active.cover?`<img src="${active.cover}">`:'📖'}</div>
+      <div style="flex:1;min-width:0">
+        <b style="font-size:15px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${active.title}</b>
+        <span style="font-size:12px;color:var(--mut)">${active.author} • Pág. ${active.cur} de ${active.tot} (${pct}%)</span>
+        <div class="prog" style="margin:8px 0"><div style="width:${pct}%"></div></div>
+        <button class="btn-s" onclick="openReader('${active.id}')">Continuar leyendo ›</button>
+      </div></div>`;
+  }
+  const dq=document.getElementById('daily-quote');
+  if(!quotes.length)dq.textContent='“Un lector vive mil vidas antes de morir.” — Guarda tus frases favoritas leyendo para verlas aquí.';
+  else{const q=quotes[Math.floor(Math.random()*quotes.length)];dq.innerHTML=`“${q.text}” <div style="font-style:normal;font-size:11px;color:var(--mut);margin-top:4px">— ${q.bookTitle} (Pág. ${q.page})</div>`}
+}
+
+// BIBLIOTECA
+function renderLib(){
+  const cols=['Todos','Leyendo','Pendientes','Terminados','Favoritos'];
+  document.getElementById('col-chips').innerHTML=cols.map(c=>`<button class="chip ${curCol===c?'on':''}" onclick="curCol='${c}';renderLib()">${c}</button>`).join('');
+  const q=(document.getElementById('search-lib').value||'').toLowerCase();
+  const list=books.filter(b=>{
+    const mCol=curCol==='Todos'||(curCol==='Favoritos'?b.fav:b.status===curCol);
+    const mTxt=b.title.toLowerCase().includes(q)||b.author.toLowerCase().includes(q);
+    return mCol&&mTxt;
+  });
+  const g=document.getElementById('lib-grid');
+  if(!list.length){g.innerHTML='<p style="grid-column:1/-1;text-align:center;color:var(--mut);font-size:13px">No hay libros en esta colección.</p>';return}
+  g.innerHTML=list.map(b=>{
+    const pct=Math.round((b.cur/b.tot)*100);
+    return `<div class="bcard">
+      <div class="cover" onclick="openReader('${b.id}')">${b.cover?`<img src="${b.cover}">`:'📖'}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span class="badge-tag">${b.status}</span>
+        <span onclick="toggleFav('${b.id}')" style="font-size:15px">${b.fav?'❤️':'🤍'}</span>
+      </div>
+      <b style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" onclick="openReader('${b.id}')">${b.title}</b>
+      <span style="font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.author}</span>
+      <div class="prog"><div style="width:${pct}%"></div></div>
+      <button class="btn-s" style="padding:5px;font-size:11px" onclick="openBookSheet('${b.id}')">Ficha / Editar</button>
+    </div>`;
+  }).join('');
+}
+function toggleFav(id){const b=books.find(x=>x.id===id);if(b){b.fav=!b.fav;S.set('books',books);renderLib()}}
+function openBookSheet(id){
+  const b=books.find(x=>x.id===id);if(!b)return;
+  document.getElementById('m-book-body').innerHTML=`
+    <h3 style="margin:0 0 10px">📖 Ficha del libro</h3>
+    <label style="font-size:12px;font-weight:700">Título</label><input id="fb-t" value="${b.title}" style="margin:4px 0 8px">
+    <label style="font-size:12px;font-weight:700">Autor</label><input id="fb-a" value="${b.author}" style="margin:4px 0 8px">
+    <label style="font-size:12px;font-weight:700">Colección / Estado</label>
+    <select id="fb-s" style="margin:4px 0 8px">
+      <option ${b.status==='Leyendo'?'selected':''}>Leyendo</option>
+      <option ${b.status==='Pendientes'?'selected':''}>Pendientes</option>
+      <option ${b.status==='Terminados'?'selected':''}>Terminados</option>
+    </select>
+    <div style="font-size:12px;color:var(--mut);margin:6px 0">Inicio: ${b.started} ${b.finished?'• Fin: '+b.finished:''}</div>
+    <button class="btn" onclick="saveBookSheet('${b.id}')">Guardar cambios</button>
+    <button class="btn-s" style="width:100%;margin-top:8px" onclick="openReader('${b.id}');document.getElementById('m-book').style.display='none'">Abrir libro</button>
+    <button class="btn-s" style="width:100%;margin-top:8px;color:#d9534f" onclick="removeBook('${b.id}')">Eliminar libro</button>`;
+  document.getElementById('m-book').style.display='flex';
+}
+function saveBookSheet(id){
+  const b=books.find(x=>x.id===id);if(!b)return;
+  b.title=document.getElementById('fb-t').value.trim()||b.title;
+  b.author=document.getElementById('fb-a').value.trim()||'Autor por definir';
+  const st=document.getElementById('fb-s').value;
+  if(st==='Terminados'&&b.status!=='Terminados')b.finished=new Date().toLocaleDateString('es-CL');
+  b.status=st;S.set('books',books);
+  document.getElementById('m-book').style.display='none';refreshAll();
+}
+async function removeBook(id){
+  if(!confirm('¿Eliminar este libro de tu biblioteca?'))return;
+  books=books.filter(x=>x.id!==id);S.set('books',books);await delPdf(id);
+  document.getElementById('m-book').style.display='none';refreshAll();
+}
+
+// DIARIO
+function renderDiary(){
+  const sel=document.getElementById('diary-book-sel');
+  if(!books.length){sel.innerHTML='<option>Importa un libro primero</option>';}
+  else{sel.innerHTML=books.map(b=>`<option value="${b.id}">${b.title}</option>`).join('');loadDiaryForm()}
+  const ql=document.getElementById('all-quotes-list');
+  ql.innerHTML=quotes.length?quotes.map((q,i)=>`<div class="card" style="padding:12px">
+    <div style="font-size:13px;font-style:italic">“${q.text}”</div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-top:6px;font-weight:700">
+      <span>📖 ${q.bookTitle} • Pág. ${q.page}</span>
+      <span onclick="quotes.splice(${i},1);S.set('quotes',quotes);renderDiary()">Borrar</span>
+    </div></div>`).join(''):'<p style="font-size:13px;color:var(--mut)">Aún no has guardado citas. Úsalas con el botón ✍️ dentro del lector.</p>';
+}
+function loadDiaryForm(){
+  const b=books.find(x=>x.id===document.getElementById('diary-book-sel').value);if(!b)return;
+  document.getElementById('d-stars').value=b.stars||5;
+  document.getElementById('d-chars').value=b.chars||'';
+  document.getElementById('d-review').value=b.review||'';
+}
+function saveDiaryEntry(){
+  const b=books.find(x=>x.id===document.getElementById('diary-book-sel').value);if(!b)return;
+  b.stars=+document.getElementById('d-stars').value;
+  b.chars=document.getElementById('d-chars').value;
+  b.review=document.getElementById('d-review').value;
+  S.set('books',books);alert('¡Guardado en tu diario literario! 💕');
+}
+
+// PROGRESO Y LOGROS
+function renderStats(){
+  const fin=books.filter(b=>b.status==='Terminados').length;
+  const prog=books.filter(b=>b.status==='Leyendo').length;
+  const hrs=(stats.mins/60).toFixed(1);
+  document.getElementById('stats-boxes').innerHTML=`
+    <div class="stat"><b>${fin}</b><span style="font-size:12px;color:var(--mut)">Terminados</span></div>
+    <div class="stat"><b>${prog}</b><span style="font-size:12px;color:var(--mut)">En progreso</span></div>
+    <div class="stat"><b>${stats.pages}</b><span style="font-size:12px;color:var(--mut)">Páginas leídas</span></div>
+    <div class="stat"><b>${hrs}h</b><span style="font-size:12px;color:var(--mut)">Tiempo leyendo</span></div>`;
+  document.getElementById('goal-txt').textContent=`Has terminado ${fin} de tu meta de ${prefs.goal} libros este mes`;
+  document.getElementById('goal-bar').style.width=Math.min(100,Math.round((fin/prefs.goal)*100))+'%';
+  const achs=[
+    {ico:'🐛',t:'Primeras páginas',d:'Completaste tu primera sesión de lectura',ok:stats.pages>=1},
+    {ico:'🌷',t:'Lectora constante',d:'Leíste en 7 días distintos',ok:stats.days.length>=7},
+    {ico:'📚',t:'Ratón de biblioteca',d:'Terminaste 5 libros completos',ok:fin>=5},
+    {ico:'✨',t:'Coleccionista de historias',d:'Guardaste 20 citas favoritas',ok:quotes.length>=20}
+  ];
+  document.getElementById('ach-list').innerHTML=achs.map(a=>`<div class="ach ${a.ok?'unlocked':''}">
+    <div style="font-size:26px">${a.ico}</div>
+    <div><b style="font-size:13px">${a.t}</b><div style="font-size:12px;color:var(--mut)">${a.d}</div></div>
+  </div>`).join('');
+}
+function setGoal(){const v=parseInt(prompt('¿Cuántos libros quieres leer este mes?',prefs.goal),10);if(v>0){prefs.goal=v;S.set('prefs',prefs);renderStats()}}
+
+// AJUSTES
+function renderSettings(){
+  const pets=[['🐛','Gusano'],['🐱','Gatito'],['🦉','Búho'],['🐰','Conejito']];
+  document.getElementById('pet-opts').innerHTML=pets.map(p=>`<button class="chip ${prefs.pet===p[0]?'on':''}" onclick="prefs.pet='${p[0]}';S.set('prefs',prefs);refreshAll()">${p[0]} ${p[1]}</button>`).join('');
+  const pals=[['lilac','💜 Lila'],['pink','🩷 Rosado'],['mint','💚 Menta'],['peach','🧡 Durazno']];
+  document.getElementById('pal-opts').innerHTML=pals.map(p=>`<button class="chip ${prefs.pal===p[0]?'on':''}" onclick="prefs.pal='${p[0]}';S.set('prefs',prefs);refreshAll()">${p[1]}</button>`).join('');
+  const fonts=[['sans','Redondeada'],['serif','Editorial'],['mono','Máquina']];
+  document.getElementById('font-opts').innerHTML=fonts.map(f=>`<button class="chip ${prefs.font===f[0]?'on':''}" onclick="prefs.font='${f[0]}';S.set('prefs',prefs);refreshAll()">${f[1]}</button>`).join('');
+}
+function applyPrefs(){
+  document.body.className=`pal-${prefs.pal} font-${prefs.font} ${prefs.th==='light'?'':prefs.th}`;
+  document.getElementById('r-th').textContent={light:'☀️',sepia:'📜',dark:'🌙'}[prefs.th];
+  renderSettings();
+}
+function cycleTheme(){const a=['light','sepia','dark'];prefs.th=a[(a.indexOf(prefs.th)+1)%3];S.set('prefs',prefs);applyPrefs()}
+
+// LECTOR
+async function openReader(id){
+  const b=books.find(x=>x.id===id);if(!b)return;
+  const buf=await getPdf(id);if(!buf){alert('No se encontró el archivo PDF.');return}
+  curBook=b;zoom=1;
+  document.getElementById('r-title').textContent=b.title;
+  document.getElementById('reader').style.display='flex';
+  pdfDoc=await pdfjsLib.getDocument({data:buf}).promise;
+  totP=pdfDoc.numPages;
+  await drawPage(b.cur>=1&&b.cur<=totP?b.cur:1,0);
+  const today=new Date().toDateString();
+  if(!stats.days.includes(today)){stats.days.push(today);S.set('stats',stats)}
+  clearInterval(timer);
+  timer=setInterval(()=>{stats.mins++;S.set('stats',stats)},60000);
+}
+function closeReader(){clearInterval(timer);document.getElementById('reader').style.display='none';refreshAll()}
+async function drawPage(n,dir){
+  if(!pdfDoc||busy||n<1||n>totP)return;
+  busy=true;
+  if(dir!==0&&n!==curP){stats.pages++;S.set('stats',stats)}
+  curP=n;
+  if(dir){sheet.classList.add(dir>0?'flip-n':'flip-p');await new Promise(r=>setTimeout(r,140))}
+  const p=await pdfDoc.getPage(curP),v1=p.getViewport({scale:1});
+  const mw=wrap.clientWidth-20,mh=wrap.clientHeight-20;
+  const dpr=Math.min(devicePixelRatio||2,2);
+  const baseSc=Math.min(mw/v1.width,mh/v1.height)*zoom;
+  const vp=p.getViewport({scale:baseSc*dpr});
+  cv.width=vp.width;cv.height=vp.height;
+  cv.style.width=Math.floor(vp.width/dpr)+'px';cv.style.height=Math.floor(vp.height/dpr)+'px';
+  await p.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;
+  sheet.classList.remove('flip-n','flip-p');
+  document.getElementById('r-ind').textContent=`${curP} / ${totP}`;
+  document.getElementById('r-pfill').style.width=((curP/totP)*100)+'%';
+  curBook.cur=curP;
+  if(curP===totP&&curBook.status!=='Terminados'){curBook.status='Terminados';curBook.finished=new Date().toLocaleDateString('es-CL')}
+  S.set('books',books);
+  updateBm();
+  busy=false;
+}
+const goPage=d=>drawPage(curP+d,d);
+function chgZoom(d){zoom=Math.max(.8,Math.min(2.4,+(zoom+d).toFixed(1)));drawPage(curP,0)}
+function toggleRTools(){const t=document.getElementById('r-tools');t.style.display=t.style.display==='flex'?'none':'flex'}
+function jumpPage(){const v=parseInt(prompt(`Ir a página (1 - ${totP}):`,curP),10);if(v>=1&&v<=totP)drawPage(v,0)}
+wrap.addEventListener('touchstart',e=>{if(zoom===1)tx0=e.touches[0].clientX},{passive:true});
+wrap.addEventListener('touchend',e=>{if(zoom===1){const dx=e.changedTouches[0].clientX-tx0;if(Math.abs(dx)>42)goPage(dx<0?1:-1)}});
+
+// Marcapáginas y citas en lector
+function updateBm(){
+  curBook.bms=curBook.bms||[];
+  const on=curBook.bms.includes(curP);
+  document.getElementById('r-rib').style.display=on?'block':'none';
+  document.getElementById('r-bm').classList.toggle('on',on);
+}
+function toggleBm(){
+  curBook.bms=curBook.bms||[];
+  curBook.bms=curBook.bms.includes(curP)?curBook.bms.filter(x=>x!==curP):[...curBook.bms,curP].sort((a,b)=>a-b);
+  S.set('books',books);updateBm();
+}
+function openRQuote(){
+  document.getElementById('rq-pg').textContent=curP;
+  const bms=curBook.bms||[];
+  document.getElementById('rq-bms').innerHTML=bms.length?'<b style="font-size:12px">🔖 Marcapáginas de este libro:</b><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">'+bms.map(p=>`<button class="btn-s" onclick="document.getElementById('m-rq').style.display='none';drawPage(${p},0)">Pág. ${p}</button>`).join('')+'</div>':'';
+  document.getElementById('m-rq').style.display='flex';
+}
+function addReaderQuote(){
+  const t=document.getElementById('rq-txt').value.trim();if(!t)return;
+  quotes.unshift({bookId:curBook.id,bookTitle:curBook.title,page:curP,text:t});
+  S.set('quotes',quotes);document.getElementById('rq-txt').value='';
+  document.getElementById('m-rq').style.display='none';alert('¡Cita guardada en tu diario! 💜');
+}
+async function findInPdf(){
+  const q=(prompt('¿Qué palabra o frase buscas en el libro?')||'').trim().toLowerCase();if(!q)return;
+  for(let i=curP;i<=totP;i++){
+    const p=await pdfDoc.getPage(i),tc=await p.getTextContent();
+    if(tc.items.map(x=>x.str).join(' ').toLowerCase().includes(q)){drawPage(i,0);return}
+  }
+  alert('No se encontró esa frase desde esta página hacia adelante.');
+}
+
+onload=async()=>{await migrateOldBook();refreshAll()};
+</script>
+</body>
+</html>
